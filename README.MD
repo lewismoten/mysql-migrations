@@ -6,6 +6,7 @@
  - [Setup](#setup)
  - [Adding Migrations](#adding-migrations)
  - [Executing Migrations](#executing-migrations)
+ - [Logging](#logging)
 
 ## Prerequisites
 A node project with [mysql](https://github.com/mysqljs/mysql) used for database.
@@ -242,6 +243,73 @@ node migration.js load-from-schema
 ```
 
 The above command will create all the tables and make entry in the logs table. It is helpful when setting up projects for newbies or environments without running entire migration process.
+
+## Logging
+
+### Custom Logging
+
+By default, logging is done with `console`. You may specify your own logger with the following methods: `debug`, `log`, `info`, `warn`, `error`, and `critical`. Each one expects a string argument as a message.
+
+```js
+var customLogger = {
+  debug: function (message) {
+    console.debug(message);
+  },
+  log: function (message) {
+    console.log(message);
+  },
+  info: function (message) {
+    console.info(message);
+  },
+  warn: function (message) {
+    console.warn(message);
+  },
+  error: function (message) {
+    console.error(message);
+  },
+  critical: function (message) {
+    console.error(message);
+  }
+};
+
+migration.init(
+  connection,
+  __dirname + '/migrations',
+  function() {},
+  [
+    "--logger",
+    customLogger
+  ]
+);
+```
+
+### Logging Threshold
+
+The logs can be fairly verbose. You can adjust the `--log-level <threshold>` according to the logs that you want to see.
+
+| Threshold | Logs |
+| --- | --- |
+| ALL | CRITICAL, ERROR, WARN, INFO, LOG, DEBUG |
+| DEBUG | CRITICAL, ERROR, WARN, INFO, LOG, DEBUG |
+| LOG | CRITICAL, ERROR, WARN, INFO, LOG |
+| INFO | CRITICAL, ERROR, WARN, INFO |
+| WARN | CRITICAL, ERROR, WARN |
+| ERROR | CRITICAL, ERROR |
+| CRITICAL | CRITICAL |
+| NONE | *(nothing/silent)* |
+
+```js
+migration.init(
+  connection,
+  __dirname + '/migrations',
+  function() {},
+  [
+    "--log-level ERROR"
+  ]
+);
+```
+
+NOTE: The `--log-level` option is not evaluated before calling methods on custom loggers specified via the `--logger` option.
 
 ## Pending
 >>Test cases: Will pick up when I get time.

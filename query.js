@@ -1,6 +1,5 @@
-var table = require('./config')['table'];
-var fileFunctions  = require('./file');
-var colors = require('colors');
+var config = require('./config');
+var table = config.table;
 
 function run_query(conn, query, cb, run) {
   if (run == null) {
@@ -36,10 +35,8 @@ function execute_query(conn, path, final_file_paths, type, cb, run) {
     var current_file_path = path + "/" + file_name;
     
     var queries = require(current_file_path);
-    console.info(colors.green(
-      `Run: ${run} Type: ${type.toUpperCase()}: ${file_name}`
-    ));
-    console.info(colors.gray(queries[type]));
+    config.logger.info(`Run: ${run} Type: ${type.toUpperCase()}: ${file_name}`);
+    config.logger.debug(queries[type]);
 
     var timestamp_val = file_name.split("_", 1)[0];
     if (typeof(queries[type]) == 'string') {
@@ -49,7 +46,7 @@ function execute_query(conn, path, final_file_paths, type, cb, run) {
         });
       }, run);
     } else if (typeof(queries[type]) == 'function') {
-      console.info(`${type.toUpperCase()} Function: "${ queries[type].toString() }"`);
+      config.logger.info(`${type.toUpperCase()} Function: "${queries[type].toString()}"`);
 
       queries[type](conn, function() {
         updateRecords(conn, type, table, timestamp_val, function () {
@@ -59,7 +56,7 @@ function execute_query(conn, path, final_file_paths, type, cb, run) {
     }
 
   } else {
-    console.info(colors.blue("No more " + type.toUpperCase() + " migrations to run"));
+    config.logger.info(`No more ${type.toUpperCase()} migrations to run`);
     cb();
   }
 }

@@ -4,12 +4,19 @@ var mysql = require('./mysql');
 var assert = require('assert');
 var fs = require('fs');
 var config = require('../config');
+var logger = require('../logger');
 
 var path = __dirname + '/migrations';
 
 describe('index.js', function () {
   before(function (done) {
     testCommons(done);
+  });
+
+  beforeEach(function (done) {
+    config.logger = logger;
+    config.logLevel = 'ALL';
+    done();
   });
 
   context('init', function () {
@@ -32,6 +39,48 @@ describe('index.js', function () {
       });
 
     })
+    it('assigns --logger to config.logger', function (done) {
+      function noop() { };
+
+      var newLogger = {
+        critical: noop,
+        error: noop,
+        warn: noop,
+        info: noop,
+        log: noop,
+        debug: noop
+      };
+      assert.notEqual(config.logger, newLogger);
+
+      index.init(
+        mysql,
+        path,
+        function () {
+          assert.equal(config.logger, newLogger);
+          done();
+        },
+        [
+          '--logger',
+          newLogger
+        ]
+      );
+    });
+    it('assigns --log-level to config.logLevel', function (done) {
+      var newLevel = 'NONE';
+      assert.notEqual(config.logLevel, newLevel);
+
+      index.init(
+        mysql,
+        path,
+        function () {
+          assert.equal(config.logLevel, newLevel);
+          done();
+        },
+        [
+          `--log-level ${newLevel}`
+        ]
+      );
+    });
   });
 
 });

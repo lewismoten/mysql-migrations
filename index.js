@@ -5,6 +5,7 @@ var queryFunctions  = require('./query');
 var config = require('./config');
 var table = config['table'];
 var migrations_types = config['migrations_types'];
+var logger = require('./logger');
 
 var updateSchema = false;
 var migrate_all = false;
@@ -33,10 +34,27 @@ function migration(conn, path, cb, options) {
       updateSchema = true;
     }
 
-    options.filter(option => option.startsWith('--template ')).forEach(option => {
+    options.filter(option => typeof option === 'string' && option.startsWith('--template ')).forEach(option => {
       config.template = option.split(' ', 2)[1];
       fs.accessSync(config.template, fs.constants.F_OK);
     });
+
+    var loggerIndex = options.findIndex(option => option === '--logger');
+    if (loggerIndex !== -1) {
+      var customLogger = options[loggerIndex + 1];
+      logger.checkLogger(customLogger);
+      config.logger = customLogger;
+    } else {
+      config.logger = logger;
+    }
+
+    options
+      .filter(option => typeof option === "string" && option.startsWith('--log-level '))
+      .forEach(option => {
+        var level = option.replace('--log-level ', '').toUpperCase();
+        logger.checkLevel(level);
+        config.logLevel = level;
+      });
   }
 
   queryFunctions.run_query(conn, "CREATE TABLE IF NOT EXISTS `" + table + "` (`timestamp` varchar(254) NOT NULL UNIQUE)", function (res) {
