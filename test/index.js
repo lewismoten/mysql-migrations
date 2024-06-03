@@ -23,21 +23,17 @@ describe('index.js', function () {
     it('reads template option', function (done) {
       var name = __dirname + '/migrations/template_17c2387b-38af-4ef6-bf6f-bb72f68255ff.js';
       fs.writeFileSync(name, 'this is a template', { encoding: 'utf-8' });
-      mysql.getConnection(function (err, connection) {
-        if (err) throw err;
-        migrations.init(
-          mysql,
-          path,
-          function () {
-            assert.equal(name, config.template);
-            done();
-          },
-          [
-            `--template ${name}`
-          ]
-        )
-      });
-
+      migrations.init(
+        mysql,
+        path,
+        function () {
+          assert.equal(name, config.template);
+          done();
+        },
+        [
+          `--template ${name}`
+        ]
+      );
     })
     it('assigns --logger to config.logger', function (done) {
       function noop() { };
@@ -52,7 +48,7 @@ describe('index.js', function () {
       };
       assert.notEqual(config.logger, newLogger);
 
-      index.init(
+      migrations.init(
         mysql,
         path,
         function () {
@@ -68,8 +64,7 @@ describe('index.js', function () {
     it('assigns --log-level to config.logLevel', function (done) {
       var newLevel = 'NONE';
       assert.notEqual(config.logLevel, newLevel);
-
-      index.init(
+      migrations.init(
         mysql,
         path,
         function () {
