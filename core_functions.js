@@ -114,7 +114,7 @@ function down_migrations(conn, max_count, path, cb) {
         queryFunctions.execute_query(conn, path, final_file_paths, 'down', cb);
       });
     } else {
-      console.info(colors.blue("No more DOWN migrations to run"));
+      config.logger.info("No more DOWN migrations to run");
       cb();
     }
   });
