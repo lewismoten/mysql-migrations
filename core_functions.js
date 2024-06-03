@@ -2,9 +2,9 @@ var fs = require("fs");
 
 var fileFunctions  = require('./file');
 var queryFunctions = require('./query');
-var colors = require('colors');
 var exec = require('child_process').exec;
-var table = require('./config')['table'];
+var config = require('./config');
+var table = config.table;
 
 function add_migration(argv, path, cb) {
   fileFunctions.validate_file_name(argv[4]);
@@ -27,7 +27,7 @@ function add_migration(argv, path, cb) {
         throw err;
       }
 
-      console.log("Added file " + file_name);
+      config.logger.info("Added file " + file_name);
       cb();
     });
   });
@@ -139,7 +139,7 @@ function update_schema(conn, path, cb) {
     exec(cmd, function(error, stdout, stderr) {
       fs.writeFile(filePath, stdout, function(err) {
         if (err) {
-          console.log(colors.red("Could not save schema file"));
+          config.logger.error("Could not save schema file");
         }
         cb();
       });
@@ -172,7 +172,7 @@ function createFromSchema(conn, path, cb) {
     cmd = cmd + " < " + filePath;
     exec(cmd, function(error, stdout, stderr) {
       if (error) {
-        console.log(colors.red("Could not load from Schema: " + error));
+        config.logger.error("Could not load from Schema: " + error);
         cb();
       } else {
         var file_paths = [];
@@ -193,7 +193,7 @@ function createFromSchema(conn, path, cb) {
       }
     });
   } else {
-    console.log(colors.red("Schema Missing: " + filePath));
+    config.logger.error("Schema Missing: " + filePath);
     cb();
   }
 }
