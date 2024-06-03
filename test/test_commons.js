@@ -1,5 +1,7 @@
 var mysql = require('./mysql');
 var fs = require('fs');
+var config = require('../config');
+var logger = require('../logger');
 
 function deleteFolderRecursive(path) {
   if (fs.existsSync(path)) {
@@ -15,7 +17,9 @@ function deleteFolderRecursive(path) {
 }
 
 module.exports = function(cb) {
-  mysql.getConnection(function(err, connection) {
+  config.logLevel = 'ALL';
+  config.logger = logger;
+  mysql.getConnection(function (err, connection) {
     if (err) {
       throw err;
     }
