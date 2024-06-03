@@ -36,7 +36,10 @@ function execute_query(conn, path, final_file_paths, type, cb, run) {
     var current_file_path = path + "/" + file_name;
     
     var queries = require(current_file_path);
-    console.info(colors.green("Run: " + run + " Type: " + type.toUpperCase() + ": " +queries[type]));
+    console.info(colors.green(
+      `Run: ${run} Type: ${type.toUpperCase()}: ${file_name}`
+    ));
+    console.info(colors.gray(queries[type]));
 
     var timestamp_val = file_name.split("_", 1)[0];
     if (typeof(queries[type]) == 'string') {
