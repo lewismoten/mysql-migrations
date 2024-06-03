@@ -115,6 +115,33 @@ module.exports = {
 }
 ```
 
+### Custom templates
+You may specify a custom template file as an option.
+
+```js
+migration.init(
+  connection,
+  __dirname + '/migrations',
+  function() {},
+  [
+    "--template migration_template.js"
+  ]
+);
+```
+
+Use the `${{ args.up }}` tag to indicate where the `up` content passed on the command line should be placed.
+
+```js
+module.exports = {
+  'up' :  function (conn, cb) {
+    conn.query ("${{ args.up }}", function (err, res) {
+      cb();
+    });
+  },
+  'down' : ""
+}
+```
+
 ## Executing Migrations
 There are few ways to run migrations.
 

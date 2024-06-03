@@ -16,7 +16,8 @@ function deleteFolderRecursive(path) {
 }
 
 module.exports = function(cb) {
-  mysql.getConnection(function(err, connection) {
+  config.template = undefined;
+  mysql.getConnection(function (err, connection) {
     if (err) {
       throw err;
     }

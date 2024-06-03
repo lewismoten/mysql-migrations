@@ -32,6 +32,11 @@ function migration(conn, path, cb, options) {
     if (options.indexOf("--update-schema") > -1) {
       updateSchema = true;
     }
+
+    options.filter(option => option.startsWith('--template ')).forEach(option => {
+      config.template = option.split(' ', 2)[1];
+      fs.accessSync(config.template, fs.constants.F_OK);
+    });
   }
 
   queryFunctions.run_query(conn, "CREATE TABLE IF NOT EXISTS `" + table + "` (`timestamp` varchar(254) NOT NULL UNIQUE)", function (res) {
@@ -94,6 +99,8 @@ function handle(argv, conn, path, cb) {
     else {
       throw new Error('command not found : ' + argv.join(" "));
     }
+  } else {
+    cb();
   }
 }
 
