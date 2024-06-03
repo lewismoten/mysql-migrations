@@ -16,8 +16,8 @@ describe('core_functions.js', function() {
 
   context('add_migration', function () {
     it('uses custom template with up SQL', function (done) {
-      config.template = './test-template.js';
-      fs.writeFileSync('./test-template.js', 'Test: ${{ args.up }}', { encoding: 'utf-8' });
+      config.template = __dirname + '/migrations/test-template.js';
+      fs.writeFileSync(config.template, 'Test: ${{ args.up }}', { encoding: 'utf-8' });
       var sql = `SELECT 'MySqlHere'`;
       var commands = ['node', 'migration', 'add', 'migration', 'test_custom_template_with_up', sql];
       var path = __dirname + '/migrations';
@@ -29,8 +29,8 @@ describe('core_functions.js', function() {
       });
     });
     it('uses custom template without up SQL', function (done) {
-      config.template = './test-template.js';
-      fs.writeFileSync('./test-template.js', 'Test: ${{ args.up }}', { encoding: 'utf-8' });
+      config.template = __dirname + '/migrations/test-template.js';
+      fs.writeFileSync(config.template, 'Test: ${{ args.up }}', { encoding: 'utf-8' });
       var commands = ['node', 'migration', 'add', 'migration', 'test_custom_template_no_sql'];
       var path = __dirname + '/migrations';
       coreFunctions.add_migration(commands, path, function () {
