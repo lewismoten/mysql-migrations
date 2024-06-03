@@ -49,7 +49,7 @@ describe('logger.js', function () {
     console.debug = originalDebug.bind(console);
     console.warn = originalWarn.bind(console);
     done();
-  })
+  });
 
   context('threshold=ALL', function () {
     beforeEach(function () {
