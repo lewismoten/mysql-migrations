@@ -1,5 +1,6 @@
 var mysql = require('./mysql');
 var fs = require('fs');
+var config = require('../config.js');
 
 function deleteFolderRecursive(path) {
   if (fs.existsSync(path)) {
