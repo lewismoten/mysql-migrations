@@ -30,8 +30,11 @@ module.exports = function(cb) {
             if (error) throw error;
             connection.query("DROP TABLE IF EXISTS user5", function (error) {
               if (error) throw error;
-              deleteFolderRecursive(__dirname + '/migrations');
-              cb();
+              connection.query("CREATE TABLE IF NOT EXISTS `" + config.table + "` (`timestamp` varchar(254) NOT NULL UNIQUE)", function (error, results) {
+                if (error) throw error;
+                deleteFolderRecursive(__dirname + '/migrations');
+                cb();
+              });
             });
           });
         });
