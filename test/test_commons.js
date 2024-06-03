@@ -33,9 +33,12 @@ module.exports = function(cb) {
               if (error) throw error;
               connection.query("CREATE TABLE IF NOT EXISTS `" + config.table + "` (`timestamp` varchar(254) NOT NULL UNIQUE)", function (error, results) {
                 if (error) throw error;
-                deleteFolderRecursive(__dirname + '/migrations');
-                cb();
-              });
+                connection.query(`delete from ${config.table}`, function (error) {
+                  if (error) throw error;
+                  deleteFolderRecursive(__dirname + '/migrations');
+                  cb();
+                });
+              })
             });
           });
         });
