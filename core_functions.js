@@ -4,24 +4,34 @@ var fileFunctions  = require('./file');
 var queryFunctions = require('./query');
 var colors = require('colors');
 var exec = require('child_process').exec;
-var table = require('./config')['table'];
+var config = require('./config');
+var table = config['table'];
 
 function add_migration(argv, path, cb) {
   fileFunctions.validate_file_name(argv[4]);
   fileFunctions.readFolder(path, function (files) {
     var file_name = Date.now() + "_" + argv[4];
     var file_path = path + '/' + file_name + '.js';
+    var content;
 
-    var sql_json = {
-      up   : '',
-      down : ''
-    };
+    if (config.template) {
+      content = fs.readFileSync(config.template, { encoding: 'utf-8' });
+      let up = '';
+      if (argv.length > 5) up = argv[5];
+      content = content.replace(/\$\{\{ args\.up \}\}/i, up);
+    } else {
+      var sql_json = {
+        up: '',
+        down: ''
+      };
 
-    if (argv.length > 5) {
-      sql_json['up'] = argv[5];
+      if (argv.length > 5) {
+        sql_json['up'] = argv[5];
+      }
+
+      content = 'module.exports = ' + JSON.stringify(sql_json, null, 4);
     }
 
-    var content = 'module.exports = ' + JSON.stringify(sql_json, null, 4);
     fs.writeFile(file_path, content, 'utf-8', function (err) {
       if (err) {
         throw err;
