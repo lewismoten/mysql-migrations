@@ -99,6 +99,8 @@ function handle(argv, conn, path, cb) {
     else {
       throw new Error('command not found : ' + argv.join(" "));
     }
+  } else {
+    cb();
   }
 }
 
