@@ -26,4 +26,17 @@ describe('core_functions.js', function() {
       });
     });
   });
+
+  describe('down', function () {
+    context('zero migrations', function () {
+      it('', function (done) {
+        const zeroMigrations = 0;
+        var path = __dirname + '/migrations';
+        mysql.getConnection(function (err, connection) {
+          if (err) throw err;
+          coreFunctions.down_migrations(mysql, zeroMigrations, path, done);
+        });
+      });
+    })
+  })
 });
