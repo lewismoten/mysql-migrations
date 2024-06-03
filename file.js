@@ -1,4 +1,5 @@
 var fs = require("fs");
+var config = require('./config');
 
 function validate_file_name(file_name) {
   var patt = /^[0-9a-zA-Z-_]+$/;
@@ -12,6 +13,8 @@ function readFolder(path, cb) {
     if (err) {
       throw err;
     }
+
+    files = files.filter(file => config.script_pattern.test(file));
 
     var schemaPath = files.indexOf("schema.sql");
     if (schemaPath > -1) {
