@@ -104,6 +104,9 @@ function down_migrations(conn, max_count, path, cb) {
         var final_file_paths = file_paths.sort(function(a, b) { return (b.timestamp - a.timestamp)}).slice(0, max_count);
         queryFunctions.execute_query(conn, path, final_file_paths, 'down', cb);
       });
+    } else {
+      console.info(colors.blue("No more DOWN migrations to run"));
+      cb();
     }
   });
 }
