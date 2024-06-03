@@ -7,11 +7,10 @@ function run_query(conn, query, cb, run) {
   }
 
   if (run) {
-    conn.getConnection(function(err, connection) {
+    conn.getConnection(function (err, connection) {
       if (err) {
         throw err;
       }
-
       connection.query(query, function (error, results, fields) {
         connection.release();
         if (error) {
@@ -33,22 +32,22 @@ function execute_query(conn, path, final_file_paths, type, cb, run) {
   if (final_file_paths.length) {
     var file_name = final_file_paths.shift()['file_path'];
     var current_file_path = path + "/" + file_name;
-    
+
     var queries = require(current_file_path);
     config.logger.info(`Run: ${run} Type: ${type.toUpperCase()}: ${file_name}`);
     config.logger.debug(queries[type]);
 
     var timestamp_val = file_name.split("_", 1)[0];
-    if (typeof(queries[type]) == 'string') {
+    if (typeof (queries[type]) == 'string') {
       run_query(conn, queries[type], function (res) {
         updateRecords(conn, type, table, timestamp_val, function () {
           execute_query(conn, path, final_file_paths, type, cb, run);
         });
       }, run);
-    } else if (typeof(queries[type]) == 'function') {
+    } else if (typeof (queries[type]) == 'function') {
       config.logger.info(`${type.toUpperCase()} Function: "${queries[type].toString()}"`);
 
-      queries[type](conn, function() {
+      queries[type](conn, function () {
         updateRecords(conn, type, table, timestamp_val, function () {
           execute_query(conn, path, final_file_paths, type, cb);
         });

@@ -5,7 +5,7 @@ var logger = require('../logger');
 
 function deleteFolderRecursive(path) {
   if (fs.existsSync(path)) {
-    fs.readdirSync(path).forEach(function(file,index){
+    fs.readdirSync(path).forEach(function (file, index) {
       var curPath = path + "/" + file;
       if (!fs.lstatSync(curPath).isDirectory()) {
         fs.unlinkSync(curPath);
@@ -16,7 +16,7 @@ function deleteFolderRecursive(path) {
   }
 }
 
-module.exports = function(cb) {
+module.exports = function (cb) {
   config.template = undefined;
   config.logLevel = 'ALL';
   config.logger = logger;

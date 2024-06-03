@@ -9,7 +9,7 @@ var config = require('../config');
 
 var should = chai.should();
 
-describe('core_functions.js', function() {
+describe('core_functions.js', function () {
   beforeEach(function (done) {
     testCommons(done);
   });
@@ -111,9 +111,9 @@ END;
 
     it('should add migration', function (done) {
       var commands = ['node', 'migration', 'add', 'migration', 'create_user2'];
-      var path = __dirname +  '/migrations';
+      var path = __dirname + '/migrations';
       coreFunctions.add_migration(commands, path, function () {
-        fs.readdirSync(path).forEach(function(file,index){
+        fs.readdirSync(path).forEach(function (file, index) {
           assert.ok(file.indexOf('create_user2'));
         });
 

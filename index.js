@@ -1,7 +1,7 @@
 var fs = require("fs");
 
-var coreFunctions  = require('./core_functions');
-var queryFunctions  = require('./query');
+var coreFunctions = require('./core_functions');
+var queryFunctions = require('./query');
 var config = require('./config');
 var table = config['table'];
 var migrations_types = config['migrations_types'];
@@ -10,8 +10,8 @@ var logger = require('./logger');
 var updateSchema = false;
 var migrate_all = false;
 function migration(conn, path, cb, options) {
-  if(cb == null)
-    cb = () => {};
+  if (cb == null)
+    cb = () => { };
   argv = process.argv;
   var updateSchemaIndex = argv.indexOf("--update-schema");
   if (updateSchemaIndex > -1) {
@@ -124,7 +124,7 @@ function handle(argv, conn, path, cb) {
 
 function updateSchemaAndEnd(conn, path) {
   if (updateSchema) {
-    coreFunctions.update_schema(conn, path, function() {
+    coreFunctions.update_schema(conn, path, function () {
       conn.end();
     })
   } else {
