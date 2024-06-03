@@ -118,7 +118,7 @@ function update_schema(conn, path, cb) {
   var conn_config = conn.config.connectionConfig;
   var filePath = path + '/' + 'schema.sql';
   fs.unlink(filePath, function() {
-    var cmd = "mysqldump --no-data ";
+    var cmd = "mysqldump --no-data --routines --events";
     if (conn_config.host) {
       cmd = cmd + " -h " + conn_config.host;
     }
