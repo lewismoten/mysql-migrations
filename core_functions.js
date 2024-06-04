@@ -157,11 +157,7 @@ function dump(conn, path, file, cb, flags) {
       stdout = stdout.replace(/\s+definer=`[^`]+`@`[^`]+`/ig, '');
 
       // remove version checks /*!00000 ... */;
-      stdout = stdout.replace(/^\/\*!\d+.*\*\/\s*;\n/gm, '');
-
-      // remove double-empty lines
-      stdout = stdout.replace(/\r\n\r\n/gm, '\r\n');
-      stdout = stdout.replace(/\n\n/gm, '\n');
+      stdout = stdout.replace(/^\/\*!\d+.*\*\/\s*;[\r\n]+/gm, '');
 
       fs.writeFile(filePath, stdout, function (err) {
         if (err) {
