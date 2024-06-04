@@ -10,10 +10,14 @@ function run_query(conn, query, cb, run) {
 
   if (run) {
     conn.getConnection(function (err, connection) {
-      if (err) throw err;
+      if (err) {
+        config.logger.error(`${err}`);
+        throw err;
+      }
       connection.query(query, function (error, results, fields) {
         connection.release();
         if (error) {
+          config.logger.error(`${error}`);
           throw error;
         }
         cb(results);
