@@ -31,10 +31,11 @@ function execute_query(conn, path, final_file_paths, type, cb, run = true) {
     run = true;
   }
 
+  const TYPE_NAME = type.toUpperCase();
+
   if (final_file_paths.length) {
     var file_name = final_file_paths.shift()['file_path'];
     var current_file_path = path + "/" + file_name;
-    const TYPE_NAME = type.toUpperCase();
     const execution = run ? 'Run Query' : 'Timestamp Only';
 
     var queries = require(current_file_path);
