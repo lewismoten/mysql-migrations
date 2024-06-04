@@ -1,10 +1,10 @@
 {
-  "name": "mysql-migrations",
+  "name": "@lewismoten/mysql-migrations",
   "version": "1.0.7",
   "description": "A tool to use with mysql package to maintain migrations",
   "main": "index.js",
   "scripts": {
-    "test": "node node_modules/.bin/mocha test/*"
+    "test": "node node_modules/.bin/mocha test/*.js"
   },
   "repository": {
     "type": "git",

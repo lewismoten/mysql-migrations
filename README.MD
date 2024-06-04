@@ -6,6 +6,7 @@
  - [Setup](#setup)
  - [Adding Migrations](#adding-migrations)
  - [Executing Migrations](#executing-migrations)
+ - [Logging](#logging)
 
 ## Prerequisites
 A node project with [mysql](https://github.com/mysqljs/mysql) used for database.
@@ -115,6 +116,33 @@ module.exports = {
 }
 ```
 
+### Custom templates
+You may specify a custom template file as an option.
+
+```js
+migration.init(
+  connection,
+  __dirname + '/migrations',
+  function() {},
+  [
+    "--template migration_template.js"
+  ]
+);
+```
+
+Use the `${{ args.up }}` tag to indicate where the `up` content passed on the command line should be placed.
+
+```js
+module.exports = {
+  'up' :  function (conn, cb) {
+    conn.query ("${{ args.up }}", function (err, res) {
+      cb();
+    });
+  },
+  'down' : ""
+}
+```
+
 ## Executing Migrations
 There are few ways to run migrations.
 
@@ -216,6 +244,154 @@ node migration.js load-from-schema
 
 The above command will create all the tables and make entry in the logs table. It is helpful when setting up projects for newbies or environments without running entire migration process.
 
+## Saving Data and Loading from Data
+Having `data.sql` is good because it will help you review the data changes in the PR itself. The data is stored in migrations folder under the file name `data.sql`. There are two ways to generate data.
+1. Single Run
+```bash
+node migration.js up --update-data
+```
+2. For all runs, you can configure in the init part itself.
+```js
+# migration.js
+var mysql = require('mysql');
+var migration = require('mysql-migrations');
+
+var connection = mysql.createPool({
+  connectionLimit : 10,
+  host     : 'localhost',
+  user     : 'root',
+  password : 'password',
+  database : 'your_database'
+});
+
+migration.init(connection, __dirname + '/migrations', function() {}, ["--update-data"]);
+```
+and then run migrations normally
+
+```bash
+node migration.js up
+node migration.js down 2
+..
+```
+
+Updated Data will be stored in migrations folder after each run.
+### Loading Directly from Data
+Suppose you setup your project and you want to avoid running the entire migrations and simply want to load it from data generated in the above process. You can do it via:
+
+```bash
+node migration.js load-from-data
+```
+
+The above command will populate all the tables except the logs table. It is helpful when setting up projects for newbies or environments without running entire migration process.
+
+### Combining Schema and Data
+
+#### Updating
+Via command line:
+
+```bash
+node migration.js up --update-schema --update-data
+```
+For all runs:
+```js
+# migration.js
+var mysql = require('mysql');
+var migration = require('mysql-migrations');
+
+var connection = mysql.createPool({
+  connectionLimit : 10,
+  host     : 'localhost',
+  user     : 'root',
+  password : 'password',
+  database : 'your_database'
+});
+
+migration.init(
+  connection,
+  __dirname + '/migrations',
+  function() {}, 
+  [
+    "--update-schema",
+    "--update-data"
+  ]
+);
+```
+#### Loading
+
+Make sure you load the schema first before loading data.
+
+```bash
+node migration.js load-from-schema
+node migration.js load-from-data
+```
+
+## Logging
+
+### Custom Logging
+
+By default, logging is done with `console`. You may specify your own logger with the following methods: `debug`, `log`, `info`, `warn`, `error`, and `critical`. Each one expects a string argument as a message.
+
+```js
+var customLogger = {
+  debug: function (message) {
+    console.debug(message);
+  },
+  log: function (message) {
+    console.log(message);
+  },
+  info: function (message) {
+    console.info(message);
+  },
+  warn: function (message) {
+    console.warn(message);
+  },
+  error: function (message) {
+    console.error(message);
+  },
+  critical: function (message) {
+    console.error(message);
+  }
+};
+
+migration.init(
+  connection,
+  __dirname + '/migrations',
+  function() {},
+  [
+    "--logger",
+    customLogger
+  ]
+);
+```
+
+### Logging Threshold
+
+The logs can be fairly verbose. You can adjust the `--log-level <threshold>` according to the logs that you want to see.
+
+| Threshold | Logs |
+| --- | --- |
+| ALL | CRITICAL, ERROR, WARN, INFO, LOG, DEBUG |
+| DEBUG | CRITICAL, ERROR, WARN, INFO, LOG, DEBUG |
+| LOG | CRITICAL, ERROR, WARN, INFO, LOG |
+| INFO | CRITICAL, ERROR, WARN, INFO |
+| WARN | CRITICAL, ERROR, WARN |
+| ERROR | CRITICAL, ERROR |
+| CRITICAL | CRITICAL |
+| NONE | *(nothing/silent)* |
+
+```js
+migration.init(
+  connection,
+  __dirname + '/migrations',
+  function() {},
+  [
+    "--log-level ERROR"
+  ]
+);
+```
+
+NOTE: The `--log-level` option is not evaluated before calling methods on custom loggers specified via the `--logger` option.
+
 ## Pending
 >>Test cases: Will pick up when I get time.
 
@@ -227,3 +403,6 @@ It is my first contribution to npm and I am sort of happy over it. I made this w
 
 >>Credits to my parents.
 
+### Forked
+
+The original repository [kawadhiya21/mysql-migrations](https://github.com/kawadhiya21/mysql-migrations) appears to be abandoned. The library has been forked to resolve a few of my own issues as well as those submitted by others. Enjoy.
