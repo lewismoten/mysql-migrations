@@ -142,7 +142,7 @@ function connectionArgs(connectionConfig) {
 }
 function dump(conn, path, file, cb, flags) {
   var filePath = `${path}/${file}`;
-  var cmd = `mysqldump ${flags} --skip-dump-date`;
+  var cmd = `mysqldump ${flags} --skip-dump-date --skip-definer --skip-comments --skip-version-check`;
   cmd += connectionArgs(conn.config.connectionConfig);
   fs.unlink(filePath, function () {
     exec(cmd, function (error, stdout, stderr) {
