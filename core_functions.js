@@ -142,7 +142,7 @@ function connectionArgs(connectionConfig) {
 }
 function dump(conn, path, file, cb, flags) {
   var filePath = `${path}/${file}`;
-  var cmd = `mysqldump ${flags} --skip-dump-date --skip-comments --skip-version-check`;
+  var cmd = `mysqldump ${flags} --skip-dump-date --skip-comments`;
   cmd += connectionArgs(conn.config.connectionConfig);
   fs.unlink(filePath, function () {
     exec(cmd, function (error, stdout, stderr) {
@@ -155,6 +155,9 @@ function dump(conn, path, file, cb, flags) {
       }
       // remove definer
       stdout = stdout.replace(/ definer=`[^`]+`@`[^`]+`/ig, '');
+
+      // remove version checks /*!00000 ... */;
+      stdout = stdout.replace(/^\/\*!\d+/g, '');
 
       fs.writeFile(filePath, stdout, function (err) {
         if (err) {
