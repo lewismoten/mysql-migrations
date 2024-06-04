@@ -8,7 +8,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/kawadhiya21/mysql-migrations.git"
+    "url": "git+https://github.com/lewismoten/mysql-migrations.git"
   },
   "keywords": [
     "node",
@@ -18,11 +18,17 @@
     "management"
   ],
   "author": "Kshitij Awadhiya",
+  "contributors": [
+    {
+      "name": "Lewis Moten",
+      "url": "https://github.com/lewismoten"
+    }
+  ],
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/kawadhiya21/mysql-migrations/issues"
+    "url": "https://github.com/lewismoten/mysql-migrations/issues"
   },
-  "homepage": "https://github.com/kawadhiya21/mysql-migrations#readme",
+  "homepage": "https://github.com/lewismoten/mysql-migrations#readme",
   "dependencies": {
     "colors": "^1.4.0"
   },
