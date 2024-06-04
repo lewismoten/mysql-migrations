@@ -322,3 +322,6 @@ It is my first contribution to npm and I am sort of happy over it. I made this w
 
 >>Credits to my parents.
 
+### Forked
+
+The original repository [kawadhiya21/mysql-migrations](https://github.com/kawadhiya21/mysql-migrations) appears to be abandoned. The library has been forked to resolve a few of my own issues as well as those submitted by others. Enjoy.
