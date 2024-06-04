@@ -114,7 +114,7 @@ function run_migration_directly(file, type, conn, path, cb) {
     queryFunctions.execute_query(conn, path, file_paths, type, cb);
   } else if (/^\d+$/.test(file)) {
     timestamp = parseInt(file, 10);
-    fileFunctions.readMigrations(path, timestamp - 1, 1, type === 'up' ? ASCENDING : DESCENDING, (file_paths) => {
+    fileFunctions.readMigrations(path, timestamp - 1, 1, ASCENDING, (file_paths) => {
       file_paths = file_paths.filter(fs => {
         fs.timestamp === timestamp
       });
