@@ -1,6 +1,6 @@
 {
   "name": "@lewismoten/mysql-migrations",
-  "version": "1.1.1",
+  "version": "1.1.2",
   "description": "A tool to use with mysql package to maintain migrations",
   "main": "index.js",
   "scripts": {
