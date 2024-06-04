@@ -19,25 +19,33 @@ function readFolder(path, cb) {
   });
 }
 
+function parseTimestamp(file) {
+  const match = /^(\d+)\_/.exec(file);
+  if (match && match.length > 1) {
+    if (match[1].length !== 13) {
+      config.logger.warn(`Invalid timestamp: ${file}`);
+      return -1;
+    }
+    const timestamp = parseInt(match[1], 10);
+    return timestamp;
+  }
+  return -1;
+}
 function readMigrations(path, after_timestamp, max_count, cb) {
   var file_paths = [];
   var timestamps = [];
   readFolder(path, function (files) {
     files.forEach(function (file_path) {
-      const match = /^(\d+)\_/.exec(file_path);
-      if (match && match.length > 1) {
-        const timestamp = parseInt(match[1], 10);
-        if (match[1].length !== 13) {
-          config.logger.warn(`Invalid timestamp: ${file_path}`);
-        } else if (timestamps.includes(timestamp)) {
-          config.logger.warn(`Ignoring duplicate timestamp: ${file_path}`);
-        } else if (timestamp <= after_timestamp) {
-          config.logger.debug(`Skipping: ${file_path}`);
-          // already migrated
-          return;
-        } else {
-          file_paths.push({ timestamp, file_path });
-        }
+      const timestamp = parseTimestamp(file_path);
+      if (timestamp === -1) return;
+      if (timestamps.includes(timestamp)) {
+        config.logger.warn(`Ignoring duplicate timestamp: ${file_path}`);
+      } else if (timestamp <= after_timestamp) {
+        config.logger.debug(`Skipping: ${file_path}`);
+        // already migrated
+        return;
+      } else {
+        file_paths.push({ timestamp, file_path });
       }
     });
     file_paths.sort(compareTimestamps);
@@ -65,5 +73,6 @@ module.exports = {
   validate_file_name: validate_file_name,
   readFolder: readFolder,
   readFile: readFile,
-  readMigrations
+  readMigrations,
+  parseTimestamp
 };
