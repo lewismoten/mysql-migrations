@@ -244,6 +244,87 @@ node migration.js load-from-schema
 
 The above command will create all the tables and make entry in the logs table. It is helpful when setting up projects for newbies or environments without running entire migration process.
 
+## Saving Data and Loading from Data
+Having `data.sql` is good because it will help you review the data changes in the PR itself. The data is stored in migrations folder under the file name `data.sql`. There are two ways to generate data.
+1. Single Run
+```bash
+node migration.js up --update-data
+```
+2. For all runs, you can configure in the init part itself.
+```js
+# migration.js
+var mysql = require('mysql');
+var migration = require('mysql-migrations');
+
+var connection = mysql.createPool({
+  connectionLimit : 10,
+  host     : 'localhost',
+  user     : 'root',
+  password : 'password',
+  database : 'your_database'
+});
+
+migration.init(connection, __dirname + '/migrations', function() {}, ["--update-data"]);
+```
+and then run migrations normally
+
+```bash
+node migration.js up
+node migration.js down 2
+..
+```
+
+Updated Data will be stored in migrations folder after each run.
+### Loading Directly from Data
+Suppose you setup your project and you want to avoid running the entire migrations and simply want to load it from data generated in the above process. You can do it via:
+
+```bash
+node migration.js load-from-data
+```
+
+The above command will populate all the tables except the logs table. It is helpful when setting up projects for newbies or environments without running entire migration process.
+
+### Combining Schema and Data
+
+#### Updating
+Via command line:
+
+```bash
+node migration.js up --update-schema --update-data
+```
+For all runs:
+```js
+# migration.js
+var mysql = require('mysql');
+var migration = require('mysql-migrations');
+
+var connection = mysql.createPool({
+  connectionLimit : 10,
+  host     : 'localhost',
+  user     : 'root',
+  password : 'password',
+  database : 'your_database'
+});
+
+migration.init(
+  connection,
+  __dirname + '/migrations',
+  function() {}, 
+  [
+    "--update-schema",
+    "--update-data"
+  ]
+);
+```
+#### Loading
+
+Make sure you load the schema first before loading data.
+
+```bash
+node migration.js load-from-schema
+node migration.js load-from-data
+```
+
 ## Logging
 
 ### Custom Logging
