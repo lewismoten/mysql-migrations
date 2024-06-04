@@ -104,6 +104,7 @@ function handle(argv, conn, path, cb) {
       });
     } else {
       config.logger.error(`Unknown migration type '${addType}'. Expected ${addTypes.join(' or ')}`);
+      closePool(conn);
       cb();
     }
   } else if (command == 'up') {
