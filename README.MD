@@ -14,7 +14,7 @@ A node project with [mysql](https://github.com/mysqljs/mysql) used for database.
 ## Install
 It can be installed using npm.
 
-```
+```bash
 npm install mysql-migrations
 ```
 
@@ -22,7 +22,7 @@ npm install mysql-migrations
 1. Create a directory where you wish to maintain all your migrations. We call it `migrations`.
 2. Instantiate mysql-migrations by passing a mysql pool and the migrations directory path.
 
-```
+```js
 # migration.js
 var mysql = require('mysql');
 var migration = require('mysql-migrations');
@@ -41,7 +41,7 @@ migration.init(connection, __dirname + '/migrations');
 ### Advanced Setup
 If you want to execute something at the end of any migration, you can add third parameter as callback function. Example:
 
-```
+```js
 # migration.js
 var mysql = require('mysql');
 var migration = require('mysql-migrations');
@@ -64,7 +64,7 @@ migration.init(connection, __dirname + '/migrations', function() {
 ### Initiate a migration
 Run
 
-```
+```bash
 node migration.js add migration create_table_users
 ```
 
@@ -73,7 +73,7 @@ Now open the migrations folder. Locate the newest file with greatest timestamp a
 ### Add migrations
 Write the query in `up` key of the json created for the forward migration. As a part of good practice, also write the script to rollback the migration in `down` key. Ex.
 
-```
+```js
 module.exports = {
     "up": "CREATE TABLE users (user_id INT NOT NULL, UNIQUE KEY user_id (user_id), name TEXT )",
     "down": "DROP TABLE users"
@@ -82,12 +82,12 @@ module.exports = {
 
 ### Add seed
 Run
-```
+```bash
 node migration.js add seed create_table_users
 ```
 to add a seed.
 
-```
+```js
 module.exports = {
     "up": "UPDATE users SET name = 'John Snow' WHERE name = ''",
     "down": "UPDATE users SET name = '' WHERE name = 'John Snow'"
@@ -97,7 +97,7 @@ module.exports = {
 ### Initate and Add migration in single command
 
 Run
-```
+```bash
 node migration.js add migration create_table_users "CREATE TABLE mysql_migrations_347ertt3e (user_id INT NOT NULL, UNIQUE KEY user_id (user_id) )"
 ```
 Locate the newest file with greatest timestamp as it predecessor and open it. Query will be automatically added as `up` key. However `down` key needs to be filled manually.
@@ -105,7 +105,7 @@ Locate the newest file with greatest timestamp as it predecessor and open it. Qu
 ### Custom migrations
 You may initiate the migration file and add a function.
 
-```
+```js
 module.exports = {
   'up' :  function (conn, cb) {
     conn.query ("UPDATE users set name = 'alen'", function (err, res) {
@@ -153,7 +153,7 @@ There are few ways to run migrations.
 
 Example Output:
 
-```
+```bash
 UP: "CREATE TABLE users2 (user_id INT NOT NULL, UNIQUE KEY user_id (user_id), name TEXT )"
 UP: "CREATE TABLE users (user_id INT NOT NULL, UNIQUE KEY user_id (user_id), name TEXT )"
 UP: "CREATE TABLE users1 (user_id INT NOT NULL, UNIQUE KEY user_id (user_id), name TEXT )"
@@ -178,11 +178,11 @@ node migration.js run 1500891087394 down
 ## Executing backdated migrations
 Suppose there are few migrations which were merged late into the main branch. Technically, they should not run because they are old migrations and should already have been run, but it happens that someone has been working on a branch for long and once merged into master, the older migrations do not work because the latest migration timestamp is greater. There is a flag which can help in running those migrations. There are two ways:
 1. Single Run
-```
+```bash
 node migration.js up --migrate-all
 ```
 2. For all runs, you can configure in the init part itself.
-```
+```js
 # migration.js
 var mysql = require('mysql');
 var migration = require('mysql-migrations');
@@ -199,18 +199,18 @@ migration.init(connection, __dirname + '/migrations', function() {}, ["--migrate
 ```
 and then run migrations normally
 
-```
+```bash
 node migration.js up
 ```
 
 ## Saving Schema and Loading from Schema
 Having schema.sql is good because it will help you review the schema changes in PR itself. The schema is stored in migrations folder under the file name `schema.sql`. There are two ways to generate schema.
 1. Single Run
-```
+```bash
 node migration.js up --update-schema
 ```
 2. For all runs, you can configure in the init part itself.
-```
+```js
 # migration.js
 var mysql = require('mysql');
 var migration = require('mysql-migrations');
@@ -227,10 +227,9 @@ migration.init(connection, __dirname + '/migrations', function() {}, ["--update-
 ```
 and then run migrations normally
 
-```
+```bash
 node migration.js up
 node migration.js down 2
-..
 ```
 
 Updated Schema will be stored in migrations folder after each run.
@@ -238,7 +237,7 @@ Updated Schema will be stored in migrations folder after each run.
 ### Loading Directly from Schema
 Suppose you setup your project and you want to avoid running the entire migrations and simply want to load it from schema generated in the above process. You can do it via:
 
-```
+```bash
 node migration.js load-from-schema
 ```
 
@@ -271,7 +270,6 @@ and then run migrations normally
 ```bash
 node migration.js up
 node migration.js down 2
-..
 ```
 
 Updated Data will be stored in migrations folder after each run.
