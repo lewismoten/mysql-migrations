@@ -10,6 +10,14 @@
     "type": "git",
     "url": "git+https://github.com/lewismoten/mysql-migrations.git"
   },
+  "files": [
+    "config.js",
+    "core_functions.js",
+    "file.js",
+    "logger.js",
+    "migrationTable.js",
+    "query.js"
+  ],
   "keywords": [
     "node",
     "mysql",
