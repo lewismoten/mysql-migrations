@@ -115,9 +115,7 @@ function run_migration_directly(file, type, conn, path, cb) {
   } else if (/^\d+$/.test(file)) {
     timestamp = parseInt(file, 10);
     fileFunctions.readMigrations(path, timestamp - 1, 1, ASCENDING, (file_paths) => {
-      file_paths = file_paths.filter(fs => {
-        fs.timestamp === timestamp
-      });
+      file_paths = file_paths.filter(fs => fs.timestamp === timestamp);
       if (file_paths.length === 0) {
         config.logger.error(`Unable to find file for ${file}`);
         cb();
