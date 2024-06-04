@@ -31,7 +31,7 @@ function parseTimestamp(file) {
   }
   return -1;
 }
-function readMigrations(path, after_timestamp, max_count, cb) {
+function readMigrations(path, after_timestamp, max_count, ascending, cb) {
   var file_paths = [];
   var timestamps = [];
   readFolder(path, function (files) {
@@ -48,7 +48,7 @@ function readMigrations(path, after_timestamp, max_count, cb) {
         file_paths.push({ timestamp, file_path });
       }
     });
-    file_paths.sort(compareTimestamps);
+    file_paths.sort(compareTimestamps(ascending));
     if (max_count > -1) {
       file_paths = file_paths.slice(0, max_count);
     }
@@ -56,7 +56,7 @@ function readMigrations(path, after_timestamp, max_count, cb) {
   });
 }
 
-const compareTimestamps = ({ timestamp: a }, { timestamp: b }) => a - b;
+const compareTimestamps = ascending => ({ timestamp: a }, { timestamp: b }) => ascending ? a - b : b - a;
 
 function readFile(path, cb) {
   fs.readFile(path, function (err, data) {

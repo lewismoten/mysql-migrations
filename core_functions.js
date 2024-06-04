@@ -10,6 +10,8 @@ const { execSync } = require("child_process");
 
 const BEGINNING_OF_TIME = 0;
 const NO_LIMIT = -1;
+const ASCENDING = true;
+const DESCENDING = false;
 
 function add_migration(argv, path, cb) {
   const suffix = argv[4];
@@ -52,7 +54,7 @@ function up_migrations(conn, max_count, path, cb) {
       max_timestamp = results[0].timestamp;
     }
 
-    fileFunctions.readMigrations(path, max_timestamp, max_count, function (file_paths) {
+    fileFunctions.readMigrations(path, max_timestamp, max_count, ASCENDING, function (file_paths) {
       queryFunctions.execute_query(conn, path, file_paths, 'up', cb);
     });
   });
@@ -62,7 +64,7 @@ function up_migrations_all(conn, max_count, path, cb) {
   queryFunctions.run_query(conn, migrationTable.selectAll(), function (results) {
     var timestamps = results.map(r => parseInt(r.timestamp, 10));
 
-    fileFunctions.readMigrations(path, BEGINNING_OF_TIME, NO_LIMIT, function (file_paths) {
+    fileFunctions.readMigrations(path, BEGINNING_OF_TIME, NO_LIMIT, ASCENDING, function (file_paths) {
       file_paths = file_paths
         .filter(({ timestamp }) => timestamps.includes(timestamp))
         .slice(0, max_count);
@@ -76,7 +78,7 @@ function down_migrations(conn, max_count, path, cb) {
     if (results.length) {
       var temp_timestamps = results.map(e => parseInt(e.timestamp, 10));
       var earliestTimestamp = temp_timestamps[temp_timestamps.length - 1];
-      fileFunctions.readMigrations(path, earliestTimestamp - 1, NO_LIMIT, function (file_paths) {
+      fileFunctions.readMigrations(path, earliestTimestamp - 1, NO_LIMIT, DESCENDING, function (file_paths) {
         file_paths = file_paths.filter(fp => temp_timestamps.includes(fp.timestamp));
         temp_timestamps
           .filter(timestamp => !file_paths.some(fp => fp.timestamp === timestamp))
@@ -108,23 +110,26 @@ function run_migration_directly(file, type, conn, path, cb) {
         timestamp,
         file_path: file
       }
-    ]
+    ];
+    queryFunctions.execute_query(conn, path, file_paths, type, cb);
   } else if (/^\d+$/.test(file)) {
     timestamp = parseInt(file, 10);
-    file_paths = fileFunctions.readMigrations(path, timestamp - 1, 1).filter(fs => {
-      fs.timestamp === timestamp
+    fileFunctions.readMigrations(path, timestamp - 1, 1, type === 'up' ? ASCENDING : DESCENDING, (file_paths) => {
+      file_paths = file_paths.filter(fs => {
+        fs.timestamp === timestamp
+      });
+      if (file_paths.length === 0) {
+        config.logger.error(`Unable to find file for ${file}`);
+        cb();
+      } else {
+        queryFunctions.execute_query(conn, path, file_paths, type, cb);
+      }
     });
-    if (file_paths.length === 0) {
-      config.logger.error(`Unable to find file for ${file}`);
-      cb();
-      return;
-    }
   } else {
     config.logger.error(`File does not exist, and is not a timestamp. '${file}`);
     cb();
     return;
   }
-  queryFunctions.execute_query(conn, path, file_paths, type, cb);
 }
 
 function connectionArgs(connectionConfig) {
@@ -193,7 +198,7 @@ function bulkImport(conn, path, file, cb) {
 }
 function createFromSchema(conn, path, cb) {
   bulkImport(conn, path, 'schema.sql', function () {
-    fileFunctions.readMigrations(path, BEGINNING_OF_TIME, NO_LIMIT, function (file_paths) {
+    fileFunctions.readMigrations(path, BEGINNING_OF_TIME, NO_LIMIT, ASCENDING, function (file_paths) {
       queryFunctions.execute_query(conn, path, file_paths, 'up', cb, false);
     });
   });
