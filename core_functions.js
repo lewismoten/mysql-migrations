@@ -157,7 +157,7 @@ function dump(conn, path, file, cb, flags) {
       stdout = stdout.replace(/ definer=`[^`]+`@`[^`]+`/ig, '');
 
       // remove version checks /*!00000 ... */;
-      stdout = stdout.replace(/^\/\*!\d+/g, '');
+      stdout = stdout.replace(/^\/\*!\d+.*\*\/;\n/gm, '');
 
       fs.writeFile(filePath, stdout, function (err) {
         if (err) {
