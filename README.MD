@@ -161,19 +161,19 @@ No more "UP" migrations to run
 ```
 
 ### Execute anonymous migrations
-At times, few migrations need to run again or anonymously. There could be variety of reasons old migrations need to be executed or rollbacked. It can be done this way.
+At times, few migrations need to run again or anonymously. There could be variety of reasons old migrations need to be executed or rollbacked. It can be done this way by specifying the complete file name, or the timestamp alone.
 
 **Up migration**
-```
+```bash
 node migration.js run 1500891087394_create_table_users.js up
+node migration.js run 1500891087394 up
 ```
 
 **Down migration**
-```
+```bash
 node migration.js run 1500891087394_create_table_users.js down
+node migration.js run 1500891087394 down
 ```
-
->> Since these are anonymous executions, no records are maintained for any executions.
 
 ## Executing backdated migrations
 Suppose there are few migrations which were merged late into the main branch. Technically, they should not run because they are old migrations and should already have been run, but it happens that someone has been working on a branch for long and once merged into master, the older migrations do not work because the latest migration timestamp is greater. There is a flag which can help in running those migrations. There are two ways:
