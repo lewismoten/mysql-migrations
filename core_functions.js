@@ -99,7 +99,7 @@ function run_migration_directly(file, type, conn, path, cb) {
   var file_paths;
   if (fs.existsSync(current_file_path)) {
 
-    const timestamp = parseTimestamp(file);
+    const timestamp = fileFunctions.parseTimestamp(file);
     if (timestamp === -1) {
       cb();
       return;
