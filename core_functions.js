@@ -154,10 +154,14 @@ function dump(conn, path, file, cb, flags) {
         config.logger.error(stderr);
       }
       // remove definer
-      stdout = stdout.replace(/ definer=`[^`]+`@`[^`]+`/ig, '');
+      stdout = stdout.replace(/\s+definer=`[^`]+`@`[^`]+`/ig, '');
 
       // remove version checks /*!00000 ... */;
-      stdout = stdout.replace(/^\/\*!\d+.*\*\/;\n/gm, '');
+      stdout = stdout.replace(/^\/\*!\d+.*\*\/\s*;\n/gm, '');
+
+      // remove double-empty lines
+      stdout = stdout.replace(/\r\n\r\n/gm, '\r\n');
+      stdout = stdout.replace(/\n\n/gm, '\n');
 
       fs.writeFile(filePath, stdout, function (err) {
         if (err) {
