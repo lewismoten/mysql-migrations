@@ -3,7 +3,7 @@ var fs = require('fs');
 
 var coreFunctions = require('../core_functions');
 var testCommons = require('./test_commons');
-var mysql = require('./mysql');
+var poolManager = require('./poolManager');
 var assert = require('assert');
 var config = require('../config');
 
@@ -17,15 +17,17 @@ describe('core_functions.js', function () {
   context('update schema', function () {
     it('saves procedures', function (done) {
       var name = 'test_procedure_3c71dcc968da49c4bfded38d9da26107';
-      mysql.query(`
+      var pool = poolManager.newPool();
+      pool.query(`
 CREATE PROCEDURE ${name}()
 BEGIN
   SELECT 1;
 END
       `, function (error, results) {
         if (error) throw error;
-        coreFunctions.update_schema(mysql, __dirname + '/migrations', function () {
-          mysql.query('DROP PROCEDURE ' + name, function (error, results) {
+        coreFunctions.update_schema(pool, __dirname + '/migrations', function () {
+          pool.query('DROP PROCEDURE ' + name, function (error, results) {
+            pool.end();
             if (error) throw error;
             const schema = fs.readFileSync(__dirname + '/migrations/schema.sql', { encoding: 'utf-8' });
             assert.match(schema, new RegExp(name), 'Schema includes procedure');
@@ -36,7 +38,8 @@ END
     });
     it('saves functions', (done) => {
       var name = 'test_function_1391c8019b96453da1515ecd4a15a055';
-      mysql.query(`
+      var pool = poolManager.newPool();
+      pool.query(`
 CREATE FUNCTION IF NOT EXISTS ${name}(a INT, b INT)
 RETURNS INT
 DETERMINISTIC
@@ -47,8 +50,9 @@ BEGIN
 END
       `, function (error, results) {
         if (error) throw error;
-        coreFunctions.update_schema(mysql, __dirname + '/migrations', function () {
-          mysql.query('DROP FUNCTION IF EXISTS ' + name, function (error, results) {
+        coreFunctions.update_schema(pool, __dirname + '/migrations', function () {
+          pool.query('DROP FUNCTION IF EXISTS ' + name, function (error, results) {
+            pool.end();
             if (error) throw error;
             const schema = fs.readFileSync(__dirname + '/migrations/schema.sql', { encoding: 'utf-8' });
             assert.match(schema, new RegExp(name), 'Schema includes function');
@@ -59,7 +63,8 @@ END
     });
     it('saves events', (done) => {
       var name = 'test_event_128c055bb3d64cde8dd88874d8f5f346';
-      mysql.query(`
+      var pool = poolManager.newPool();
+      pool.query(`
 CREATE EVENT IF NOT EXISTS ${name}
 ON SCHEDULE
   EVERY 1 DAY
@@ -70,8 +75,9 @@ BEGIN
 END;
       `, function (error, results) {
         if (error) throw error;
-        coreFunctions.update_schema(mysql, __dirname + '/migrations', function () {
-          mysql.query('DROP EVENT IF EXISTS ' + name, function (error, results) {
+        coreFunctions.update_schema(pool, __dirname + '/migrations', function () {
+          pool.query('DROP EVENT IF EXISTS ' + name, function (error, results) {
+            pool.end();
             if (error) throw error;
             const schema = fs.readFileSync(__dirname + '/migrations/schema.sql', { encoding: 'utf-8' });
             assert.match(schema, new RegExp(name), 'Schema includes event');
@@ -127,9 +133,13 @@ END;
       it('', function (done) {
         const zeroMigrations = 0;
         var path = __dirname + '/migrations';
-        mysql.getConnection(function (err, connection) {
+        var pool = poolManager.newPool();
+        pool.getConnection(function (err, connection) {
           if (err) throw err;
-          coreFunctions.down_migrations(mysql, zeroMigrations, path, done);
+          coreFunctions.down_migrations(pool, zeroMigrations, path, () => {
+            pool.end();
+            done();
+          });
         });
       });
     })

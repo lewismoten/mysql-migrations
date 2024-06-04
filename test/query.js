@@ -2,9 +2,10 @@ var chai = require('chai');
 
 var queryFunctions = require('../query');
 var testCommons = require('./test_commons');
-var mysql = require('./mysql');
+var poolManager = require('./poolManager');
 var assert = require('assert');
 var fs = require('fs');
+var config = require('../config');
 
 var should = chai.should();
 
@@ -24,8 +25,10 @@ describe('query.js', function () {
         `module.exports={up: "select 1", down: "select 2"};`,
         { encoding: 'utf-8' }
       );
+      config.logLevel = "INFO";
 
-      mysql.getConnection(function (err, connection) {
+      var pool = poolManager.newPool();
+      pool.getConnection(function (err, connection) {
         if (err) throw err;
 
         var files = [{
@@ -39,7 +42,8 @@ describe('query.js', function () {
           }
         };
 
-        queryFunctions.execute_query(mysql, __dirname + '/migrations', files, 'up', function () {
+        queryFunctions.execute_query(pool, __dirname + '/migrations', files, 'up', function () {
+          pool.end();
           console.info = oldInfo.bind(console);
           assert.ok(loggedFile, 'File name was logged.');
           done();
@@ -49,38 +53,43 @@ describe('query.js', function () {
   });
 
   context('updateRecords', function () {
-    var timestamp = Date.now();
-    var table = 'user1';
+    var timestamp;
+    var sql;
+    before((done) => {
+      timestamp = Date.now();
+      sql = `SELECT * FROM \`${config.table}\` WHERE timestamp="${timestamp}"`;
+      done();
+    });
     it('should insert into table when up', function (done) {
-      mysql.getConnection(function (err, connection) {
-        connection.query('CREATE TABLE `' + table + '` (timestamp VARCHAR(255))', function (error, results) {
-          if (error) {
-            throw error;
-          }
+      var pool = poolManager.newPool();
+      pool.getConnection(function (err, connection) {
+        if (err) throw err;
+        queryFunctions.updateRecords(pool, 'up', timestamp, function () {
+          connection.query(sql, function (err, res) {
+            pool.end();
+            if (err) {
+              throw err;
+            }
 
-          queryFunctions.updateRecords(mysql, 'up', table, timestamp, function () {
-            connection.query('SELECT * FROM `' + table + '` WHERE timestamp="' + timestamp + '"', function (err, res) {
-              if (err) {
-                throw err;
-              }
-
-              assert.ok(res.length);
-              done();
-            });
+            assert.equal(res.length, 1);
+            done();
           });
         });
       });
     });
 
     it('should delete from table when down', function (done) {
-      queryFunctions.updateRecords(mysql, 'down', table, timestamp, function () {
-        mysql.getConnection(function (err, connection) {
-          connection.query('SELECT * FROM `' + table + '` WHERE timestamp="' + timestamp + '"', function (err, res) {
+      var pool = poolManager.newPool();
+      queryFunctions.updateRecords(pool, 'down', timestamp, function () {
+        pool.getConnection(function (err, connection) {
+          if (err) throw err;
+          connection.query(sql, function (err, res) {
+            pool.end();
             if (err) {
               throw err;
             }
 
-            assert.ok(!res.length);
+            assert.equal(res.length, 0);
             done();
           });
         });

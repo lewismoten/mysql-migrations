@@ -5,113 +5,85 @@ var queryFunctions = require('./query');
 var exec = require('child_process').exec;
 var config = require('./config');
 var table = config['table'];
+var migrationTable = require('./migrationTable');
+const { execSync } = require("child_process");
+
+const BEGINNING_OF_TIME = 0;
+const NO_LIMIT = -1;
 
 function add_migration(argv, path, cb) {
-  fileFunctions.validate_file_name(argv[4]);
+  const suffix = argv[4];
+  const up = argv[5] ?? '';
+
+  fileFunctions.validate_file_name(suffix);
   fileFunctions.readFolder(path, function (files) {
-    var file_name = Date.now() + "_" + argv[4];
-    var file_path = path + '/' + file_name + '.js';
+    const ms = Date.now();
+    var file_name = `${ms}_${suffix}`;
+    var file_path = `${path}/${file_name}.js`;
     var content;
 
     if (config.template) {
       content = fs.readFileSync(config.template, { encoding: 'utf-8' });
-      let up = '';
-      if (argv.length > 5) up = argv[5];
       content = content.replace(/\$\{\{ args\.up \}\}/i, up);
     } else {
       var sql_json = {
-        up: '',
+        up,
         down: ''
       };
-
-      if (argv.length > 5) {
-        sql_json['up'] = argv[5];
-      }
-
-      content = 'module.exports = ' + JSON.stringify(sql_json, null, 4);
+      content = `module.exports = ${JSON.stringify(sql_json, null, 4)};`;
     }
 
     fs.writeFile(file_path, content, 'utf-8', function (err) {
-      if (err) {
-        throw err;
-      }
-
-      config.logger.info("Added file " + file_name);
+      if (err) throw err;
+      config.logger.info(`Added ${file_name}`);
       cb();
     });
   });
 }
 
+
+function createMigrationTable(conn, cb) {
+  queryFunctions.run_query(conn, migrationTable.create(), cb);
+}
 function up_migrations(conn, max_count, path, cb) {
-  queryFunctions.run_query(conn, "SELECT timestamp FROM " + table + " ORDER BY timestamp DESC LIMIT 1", function (results) {
-    var file_paths = [];
+  queryFunctions.run_query(conn, migrationTable.selectLatest(), function (results) {
     var max_timestamp = 0;
     if (results.length) {
       max_timestamp = results[0].timestamp;
     }
 
-    fileFunctions.readFolder(path, function (files) {
-      files.forEach(function (file) {
-        var timestamp_split = file.split("_", 1);
-        if (timestamp_split.length) {
-          var timestamp = parseInt(timestamp_split[0]);
-          if (Number.isInteger(timestamp) && timestamp.toString().length == 13 && timestamp > max_timestamp) {
-            file_paths.push({ timestamp: timestamp, file_path: file });
-          }
-        } else {
-          throw new Error('Invalid file ' + file);
-        }
-      });
-
-      var final_file_paths = file_paths.sort(function (a, b) { return (a.timestamp - b.timestamp) }).slice(0, max_count);
-      queryFunctions.execute_query(conn, path, final_file_paths, 'up', cb);
+    fileFunctions.readMigrations(path, max_timestamp, max_count, function (file_paths) {
+      queryFunctions.execute_query(conn, path, file_paths, 'up', cb);
     });
   });
 }
 
 function up_migrations_all(conn, max_count, path, cb) {
-  queryFunctions.run_query(conn, "SELECT timestamp FROM " + table, function (results) {
-    var file_paths = [];
-    var timestamps = results.map(r => parseInt(r.timestamp));
+  queryFunctions.run_query(conn, migrationTable.selectAll(), function (results) {
+    var timestamps = results.map(r => parseInt(r.timestamp, 10));
 
-    fileFunctions.readFolder(path, function (files) {
-      files.forEach(function (file) {
-        var timestamp_split = file.split("_", 1);
-        if (timestamp_split.length) {
-          var timestamp = parseInt(timestamp_split[0]);
-          if (Number.isInteger(timestamp) && timestamp.toString().length == 13 && !timestamps.includes(timestamp)) {
-            file_paths.push({ timestamp: timestamp, file_path: file });
-          }
-        } else {
-          throw new Error('Invalid file ' + file);
-        }
-      });
-
-      var final_file_paths = file_paths.sort(function (a, b) { return (a.timestamp - b.timestamp) }).slice(0, max_count);
-      queryFunctions.execute_query(conn, path, final_file_paths, 'up', cb);
+    fileFunctions.readMigrations(path, BEGINNING_OF_TIME, NO_LIMIT, function (file_paths) {
+      file_paths = file_paths
+        .filter(({ timestamp }) => timestamps.includes(timestamp))
+        .slice(0, max_count);
+      queryFunctions.execute_query(conn, path, file_paths, 'up', cb);
     });
   });
 }
 
 function down_migrations(conn, max_count, path, cb) {
-  queryFunctions.run_query(conn, "SELECT timestamp FROM " + table + " ORDER BY timestamp DESC LIMIT " + max_count, function (results) {
-    var file_paths = [];
-    var max_timestamp = 0;
+  queryFunctions.run_query(conn, migrationTable.selectLatest(max_count), function (results) {
     if (results.length) {
-      var temp_timestamps = results.map(function (ele) {
-        return ele.timestamp;
-      });
-
-      fileFunctions.readFolder(path, function (files) {
-        files.forEach(function (file) {
-          var timestamp = file.split("_", 1)[0];
-          if (temp_timestamps.indexOf(timestamp) > -1) {
-            file_paths.push({ timestamp: timestamp, file_path: file });
-          }
-        });
-
-        var final_file_paths = file_paths.sort(function (a, b) { return (b.timestamp - a.timestamp) }).slice(0, max_count);
-        queryFunctions.execute_query(conn, path, final_file_paths, 'down', cb);
+      var temp_timestamps = results.map(e => e.timestamp);
+      var earliestTimestamp = temp_timestamps[temp_timestamps.length - 1];
+      fileFunctions.readMigrations(path, earliestTimestamp - 1, NO_LIMIT, function (file_paths) {
+        file_paths = file_paths.filter(fp => temp_timestamps.includes(fp.timestamp));
+        temp_timestamps
+          .filter(timestamp => !file_paths.some(fp => fp.timestamp === timestamp))
+          .forEach(timestamp => {
+            config.logger.warn(`Unable to find migration for ${timestamp}`);
+          });
+        queryFunctions.execute_query(conn, path, file_paths, 'down', cb);
       });
     } else {
       config.logger.info("No more DOWN migrations to run");
@@ -126,90 +98,80 @@ function run_migration_directly(file, type, conn, path, cb) {
   queryFunctions.run_query(conn, query, cb);
 }
 
-function update_schema(conn, path, cb) {
-  var conn_config = conn.config.connectionConfig;
-  var filePath = path + '/' + 'schema.sql';
+function connectionArgs(connectionConfig) {
+  let cmd = '';
+  const { host, port, user, password, database } = connectionConfig;
+  if (host) cmd += ` -h ${host}`;
+  if (port) cmd += ` --port=${port}`;
+  if (user) cmd += ` --user=${user}`;
+  if (password) cmd += ` --password=${password}`;
+  cmd += ` ${database}`;
+  return cmd;
+}
+function dump(conn, path, file, cb, flags) {
+  var filePath = `${path}/${file}`;
+  var cmd = `mysqldump ${flags}`;
+  cmd += connectionArgs(conn.config.connectionConfig);
   fs.unlink(filePath, function () {
-    var cmd = "mysqldump --no-data --routines --events";
-    if (conn_config.host) {
-      cmd = cmd + " -h " + conn_config.host;
-    }
-
-    if (conn_config.port) {
-      cmd = cmd + " --port=" + conn_config.port;
-    }
-
-    if (conn_config.user) {
-      cmd = cmd + " --user=" + conn_config.user;
-    }
-
-    if (conn_config.password) {
-      cmd = cmd + " --password=" + conn_config.password;
-    }
-
-    cmd = cmd + " " + conn_config.database;
     exec(cmd, function (error, stdout, stderr) {
+      if (error) {
+        config.logger.error(error);
+        cb();
+      }
+      if (stderr) {
+        config.logger.error(stderr);
+      }
       fs.writeFile(filePath, stdout, function (err) {
         if (err) {
-          config.logger.error("Could not save schema file");
+          config.logger.error(`Could not save ${file}: ${err}`);
+        } else {
+          config.logger.info(`Updated ${file}`);
         }
         cb();
       });
     });
   });
 }
-
-function createFromSchema(conn, path, cb) {
-  var conn_config = conn.config.connectionConfig;
-  var filePath = path + '/' + 'schema.sql';
-  if (fs.existsSync(filePath)) {
-    var cmd = "mysql ";
-    if (conn_config.host) {
-      cmd = cmd + " -h " + conn_config.host;
-    }
-
-    if (conn_config.port) {
-      cmd = cmd + " --port=" + conn_config.port;
-    }
-
-    if (conn_config.user) {
-      cmd = cmd + " --user=" + conn_config.user;
-    }
-
-    if (conn_config.password) {
-      cmd = cmd + " --password=" + conn_config.password;
-    }
-
-    cmd = cmd + " " + conn_config.database;
-    cmd = cmd + " < " + filePath;
-    exec(cmd, function (error, stdout, stderr) {
-      if (error) {
-        config.logger.error("Could not load from Schema: " + error);
-        cb();
-      } else {
-        var file_paths = [];
-        fileFunctions.readFolder(path, function (files) {
-          files.forEach(function (file) {
-            var timestamp_split = file.split("_", 1);
-            var timestamp = parseInt(timestamp_split[0]);
-            if (timestamp_split.length) {
-              file_paths.push({ timestamp: timestamp, file_path: file });
-            } else {
-              throw new Error('Invalid file ' + file);
-            }
-          });
-
-          var final_file_paths = file_paths.sort(function (a, b) { return (a.timestamp - b.timestamp) }).slice(0, 9999999);
-          queryFunctions.execute_query(conn, path, final_file_paths, 'up', cb, false);
-        });
-      }
-    });
-  } else {
-    config.logger.error("Schema Missing: " + filePath);
-    cb();
-  }
+function update_data(conn, path, cb) {
+  const db = conn.config.connectionConfig.database;
+  const ignoredTable = `${db}.${table}`;
+  dump(conn, path, 'data.sql', cb, `--no-create-info --ignore-table=${ignoredTable}`);
+}
+function update_schema(conn, path, cb) {
+  dump(conn, path, 'schema.sql', cb, '--no-data --routines --events');
 }
 
+function bulkImport(conn, path, file, cb) {
+  var filePath = `${path}/${file}`;
+  if (!fs.existsSync(filePath)) {
+    config.logger.error("Missing: " + filePath);
+    cb();
+  }
+  var cmd = "mysql ";
+  cmd += connectionArgs(conn.config.connectionConfig);
+  cmd += ` < ${filePath}`;
+  exec(cmd, function (error, stdout, stderr) {
+    if (stdout) config.logger.debug(stdout);
+    if (stderr) config.logger.error(stderr);
+    if (error) {
+      config.logger.error(`Could not load from ${file}: ${error}`);
+      throw error;
+    } else {
+      config.logger.info(`Imported ${file}`)
+      cb();
+    }
+  });
+}
+function createFromSchema(conn, path, cb) {
+  bulkImport(conn, path, 'schema.sql', function () {
+    fileFunctions.readMigrations(path, BEGINNING_OF_TIME, NO_LIMIT, function (file_paths) {
+      queryFunctions.execute_query(conn, path, file_paths, 'up', cb, false);
+    });
+  });
+}
+function createFromData(conn, path, cb) {
+  bulkImport(conn, path, 'data.sql', cb);
+}
 module.exports = {
   add_migration: add_migration,
   up_migrations: up_migrations,
@@ -217,5 +179,8 @@ module.exports = {
   down_migrations: down_migrations,
   run_migration_directly: run_migration_directly,
   update_schema: update_schema,
-  createFromSchema: createFromSchema
+  update_data,
+  createFromSchema: createFromSchema,
+  createFromData,
+  createMigrationTable
 };

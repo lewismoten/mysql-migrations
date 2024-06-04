@@ -1,16 +1,16 @@
 var config = require('./config');
-var table = config.table;
+var migrationTable = require('./migrationTable');
 
 function run_query(conn, query, cb, run) {
   if (run == null) {
     run = true;
   }
 
+  config.logger.debug(query);
+
   if (run) {
     conn.getConnection(function (err, connection) {
-      if (err) {
-        throw err;
-      }
+      if (err) throw err;
       connection.query(query, function (error, results, fields) {
         connection.release();
         if (error) {
@@ -24,7 +24,7 @@ function run_query(conn, query, cb, run) {
   }
 }
 
-function execute_query(conn, path, final_file_paths, type, cb, run) {
+function execute_query(conn, path, final_file_paths, type, cb, run = true) {
   if (run == null) {
     run = true;
   }
@@ -35,12 +35,11 @@ function execute_query(conn, path, final_file_paths, type, cb, run) {
 
     var queries = require(current_file_path);
     config.logger.info(`Run: ${run} Type: ${type.toUpperCase()}: ${file_name}`);
-    config.logger.debug(queries[type]);
 
     var timestamp_val = file_name.split("_", 1)[0];
     if (typeof (queries[type]) == 'string') {
       run_query(conn, queries[type], function (res) {
-        updateRecords(conn, type, table, timestamp_val, function () {
+        updateRecords(conn, type, timestamp_val, function () {
           execute_query(conn, path, final_file_paths, type, cb, run);
         });
       }, run);
@@ -48,7 +47,7 @@ function execute_query(conn, path, final_file_paths, type, cb, run) {
       config.logger.info(`${type.toUpperCase()} Function: "${queries[type].toString()}"`);
 
       queries[type](conn, function () {
-        updateRecords(conn, type, table, timestamp_val, function () {
+        updateRecords(conn, type, timestamp_val, function () {
           execute_query(conn, path, final_file_paths, type, cb);
         });
       });
@@ -60,12 +59,12 @@ function execute_query(conn, path, final_file_paths, type, cb, run) {
   }
 }
 
-function updateRecords(conn, type, table, timestamp_val, cb) {
+function updateRecords(conn, type, timestamp_val, cb) {
   var query = '';
   if (type == 'up') {
-    query = "INSERT INTO " + table + " (`timestamp`) VALUES ('" + timestamp_val + "')";
+    query = migrationTable.insertOne(timestamp_val);
   } else if (type == 'down') {
-    query = "DELETE FROM " + table + " WHERE `timestamp` = '" + timestamp_val + "'"
+    query = migrationTable.deleteOne(timestamp_val);
   }
 
   run_query(conn, query, function (res) {
