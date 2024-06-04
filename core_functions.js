@@ -74,7 +74,7 @@ function up_migrations_all(conn, max_count, path, cb) {
 function down_migrations(conn, max_count, path, cb) {
   queryFunctions.run_query(conn, migrationTable.selectLatest(max_count), function (results) {
     if (results.length) {
-      var temp_timestamps = results.map(e => e.timestamp);
+      var temp_timestamps = results.map(e => parseInt(e.timestamp, 10));
       var earliestTimestamp = temp_timestamps[temp_timestamps.length - 1];
       fileFunctions.readMigrations(path, earliestTimestamp - 1, NO_LIMIT, function (file_paths) {
         file_paths = file_paths.filter(fp => temp_timestamps.includes(fp.timestamp));
