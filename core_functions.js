@@ -94,8 +94,37 @@ function down_migrations(conn, max_count, path, cb) {
 
 function run_migration_directly(file, type, conn, path, cb) {
   var current_file_path = path + "/" + file;
-  var query = require(current_file_path)[type];
-  queryFunctions.run_query(conn, query, cb);
+  var file_paths;
+  if (fs.existsSync(current_file_path)) {
+
+    const timestamp = parseTimestamp(file);
+    if (timestamp === -1) {
+      cb();
+      return;
+    }
+
+    file_paths = [
+      {
+        timestamp,
+        file_path: file
+      }
+    ]
+  } else if (/^\d+$/.test(file)) {
+    timestamp = parseInt(file, 10);
+    file_paths = fileFunctions.readMigrations(path, timestamp - 1, 1).filter(fs => {
+      fs.timestamp === timestamp
+    });
+    if (file_paths.length === 0) {
+      config.logger.error(`Unable to find file for ${file}`);
+      cb();
+      return;
+    }
+  } else {
+    config.logger.error(`File does not exist, and is not a timestamp. '${file}`);
+    cb();
+    return;
+  }
+  queryFunctions.execute_query(conn, path, file_paths, type, cb);
 }
 
 function connectionArgs(connectionConfig) {
